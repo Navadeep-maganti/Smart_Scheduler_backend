@@ -14,6 +14,7 @@ The current scheduler is a V1 heuristic engine: deterministic, constraint-driven
 - Hard conflict checks for faculty, room, section, break slots, and unavailable slots
 - Soft scoring for preferred rooms, preferred slots, balanced day load, and avoid slots
 - Bounded backtracking instead of exhaustive brute force
+- JWT-based authentication endpoints for register, login, refresh, and current user lookup
 - Terminal commands for seeding, generating, and inspecting timetables
 
 ## Tech Stack
@@ -128,6 +129,38 @@ Run the development server:
 ```powershell
 python manage.py runserver
 ```
+
+## Authentication Service
+
+The backend now uses `accounts.AppUser` as the Django auth model and exposes JWT auth endpoints under `/api/auth/`.
+
+Available endpoints:
+
+- `POST /api/auth/register/`
+- `POST /api/auth/login/`
+- `POST /api/auth/refresh/`
+- `GET /api/auth/me/`
+
+Example register payload:
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "StrongPass123",
+  "role": "ADMIN"
+}
+```
+
+Example login payload:
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "StrongPass123"
+}
+```
+
+`/api/auth/login/` returns `access`, `refresh`, and the authenticated `user`.
 
 ## Seed Data
 
