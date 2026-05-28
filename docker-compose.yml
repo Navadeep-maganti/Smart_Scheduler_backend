@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: smart_sched_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smart_sched
+      POSTGRES_USER: smart_sched_user
+      POSTGRES_PASSWORD: smart_sched_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - smart_sched_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  smart_sched_postgres_data:
