@@ -61,6 +61,7 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
             "constraints:write_department",
             "department:read",
             "faculty:read",
+            "infrastructure:read",
             "timetable:review_department",
         },
         Role.ADMIN: {
@@ -73,6 +74,8 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
             "department:write",
             "faculty:read",
             "faculty:write",
+            "infrastructure:read",
+            "infrastructure:write",
             "students:read",
             "students:write",
             "timetable:read",
