@@ -23,4 +23,5 @@ urlpatterns = [
     path("api/academics/", include("academics.urls")),
     path("api/constraints/", include("constraints.urls")),
     path("api/infrastructure/", include("infrastructure.urls")),
+    path("api/timetables/", include("timetables.urls")),
 ]

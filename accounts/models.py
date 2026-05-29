@@ -55,6 +55,8 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
             "profile:read_self",
             "password:change_self",
             "timetable:read_assigned",
+            "timetable:read_department",
+            "timetable:write_department",
             "constraints:read_self",
             "constraints:write_self",
             "constraints:read_department",
