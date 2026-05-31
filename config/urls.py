@@ -16,9 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from .views import ChoicesView, DashboardView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/meta/choices/", ChoicesView.as_view(), name="meta-choices"),
+    path("api/meta/choices", ChoicesView.as_view(), name="meta-choices-no-slash"),
+    path("api/dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("api/dashboard", DashboardView.as_view(), name="dashboard-no-slash"),
     path("api/auth/", include("accounts.urls")),
     path("api/academics/", include("academics.urls")),
     path("api/constraints/", include("constraints.urls")),

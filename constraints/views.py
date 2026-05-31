@@ -1,7 +1,9 @@
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from rest_framework import serializers, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
+from infrastructure.models import Day, Timeslot
 
 from .models import ConstraintType, FacultyConstraint
 from .permissions import ConstraintTypePermission, FacultyConstraintPermission
@@ -141,3 +143,28 @@ class FacultyConstraintViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.Mode
 
     def perform_update(self, serializer):
         self.perform_create(serializer)
+
+    @action(detail=False, methods=["get"], url_path=r"(?P<faculty_id>[^/.]+)/availability")
+    def faculty_availability(self, request, faculty_id=None):
+        days = list(Day.objects.order_by("day_id"))
+        timeslots = list(Timeslot.objects.order_by("slot_number"))
+        constraints = self.filter_queryset(self.get_queryset()).filter(faculty_id=faculty_id)
+        constrained = {(constraint.day_id, constraint.slot_id): constraint for constraint in constraints}
+
+        results = []
+        for day in days:
+            slots = []
+            for slot in timeslots:
+                constraint = constrained.get((day.day_id, slot.slot_id))
+                slots.append(
+                    {
+                        "slot_id": slot.slot_id,
+                        "slot_number": slot.slot_number,
+                        "is_break": slot.is_break,
+                        "is_available": constraint is None and not slot.is_break,
+                        "constraint": FacultyConstraintSerializer(constraint).data if constraint else None,
+                    }
+                )
+            results.append({"day_id": day.day_id, "day_name": day.day_name, "slots": slots})
+
+        return Response({"faculty_id": int(faculty_id), "days": results})

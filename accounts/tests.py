@@ -1,7 +1,8 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import AppUser
+from academics.models import Department
+from .models import AppUser, Faculty
 
 
 class AuthenticationApiTests(APITestCase):
@@ -171,5 +172,62 @@ class AuthenticationApiTests(APITestCase):
             {"role": AppUser.Role.ADMIN},
             format="json",
         )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_can_list_users(self):
+        self.authenticate()
+
+        response = self.client.get("/api/auth/users/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(response.data["count"], 1)
+
+    def test_admin_can_create_faculty_profile(self):
+        self.authenticate()
+        department = Department.objects.create(department_code="ECE", department_name="Electronics")
+        faculty_user = AppUser.objects.create_user(
+            email="faculty@example.com",
+            password="StrongPass123!",
+            role=AppUser.Role.FACULTY,
+        )
+
+        response = self.client.post(
+            "/api/auth/faculty/",
+            {
+                "user": faculty_user.user_id,
+                "faculty_name": "Dr Faculty",
+                "department": department.department_id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["email"], "faculty@example.com")
+        self.assertEqual(response.data["department_code"], "ECE")
+
+    def test_me_profile_returns_linked_faculty_profile(self):
+        department = Department.objects.create(department_code="CSE", department_name="Computer Science")
+        self.user.role = AppUser.Role.FACULTY
+        self.user.save(update_fields=["role"])
+        faculty = Faculty.objects.create(
+            user=self.user,
+            faculty_name="Current Faculty",
+            department=department,
+        )
+        self.authenticate()
+
+        response = self.client.get("/api/auth/me/profile/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["profile_type"], "faculty")
+        self.assertEqual(response.data["profile"]["faculty_id"], faculty.faculty_id)
+
+    def test_non_admin_cannot_list_users(self):
+        self.user.role = AppUser.Role.STUDENT
+        self.user.save(update_fields=["role"])
+        self.authenticate()
+
+        response = self.client.get("/api/auth/users/")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

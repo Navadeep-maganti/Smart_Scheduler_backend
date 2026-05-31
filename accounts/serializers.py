@@ -4,7 +4,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import AppUser
+from .models import AppUser, Faculty, Student
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -121,3 +121,95 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
 class RoleSummarySerializer(serializers.Serializer):
     role = serializers.CharField()
     permissions = serializers.ListField(child=serializers.CharField())
+
+
+class UserAdminSerializer(serializers.ModelSerializer):
+    permissions = serializers.ListField(child=serializers.CharField(), read_only=True)
+    password = serializers.CharField(write_only=True, min_length=8, required=False)
+
+    class Meta:
+        model = AppUser
+        fields = ("user_id", "email", "password", "role", "permissions", "is_active", "created_at", "updated_at")
+        read_only_fields = ("user_id", "permissions", "created_at", "updated_at")
+
+    def validate_email(self, value):
+        return AppUser.objects.normalize_email(value)
+
+    def validate_password(self, value):
+        password_validation.validate_password(value)
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop("password", None)
+        return AppUser.objects.create_user(password=password, **validated_data)
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+        instance = super().update(instance, validated_data)
+        if password:
+            instance.set_password(password)
+            instance.save(update_fields=["password"])
+        return instance
+
+
+class FacultySerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email", read_only=True)
+    role = serializers.CharField(source="user.role", read_only=True)
+    department_code = serializers.CharField(source="department.department_code", read_only=True)
+    department_name = serializers.CharField(source="department.department_name", read_only=True)
+
+    class Meta:
+        model = Faculty
+        fields = (
+            "faculty_id",
+            "user",
+            "email",
+            "role",
+            "faculty_name",
+            "department",
+            "department_code",
+            "department_name",
+        )
+        read_only_fields = ("faculty_id", "email", "role", "department_code", "department_name")
+
+    def validate_user(self, user):
+        if user.role not in {AppUser.Role.FACULTY, AppUser.Role.HOD}:
+            raise serializers.ValidationError("Selected user must have FACULTY or HOD role.")
+        queryset = Faculty.objects.filter(user=user)
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError("Selected user already has a faculty profile.")
+        return user
+
+
+class StudentSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email", read_only=True)
+    role = serializers.CharField(source="user.role", read_only=True)
+    department_code = serializers.CharField(source="department.department_code", read_only=True)
+    department_name = serializers.CharField(source="department.department_name", read_only=True)
+
+    class Meta:
+        model = Student
+        fields = (
+            "student_id",
+            "user",
+            "email",
+            "role",
+            "roll_no",
+            "student_name",
+            "department",
+            "department_code",
+            "department_name",
+        )
+        read_only_fields = ("student_id", "email", "role", "department_code", "department_name")
+
+    def validate_user(self, user):
+        if user.role != AppUser.Role.STUDENT:
+            raise serializers.ValidationError("Selected user must have STUDENT role.")
+        queryset = Student.objects.filter(user=user)
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError("Selected user already has a student profile.")
+        return user

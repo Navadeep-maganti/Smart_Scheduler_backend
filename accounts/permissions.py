@@ -68,3 +68,13 @@ class HasPermissionCode(BasePermission):
 class CanManageRoles(HasPermissionCode):
     required_permission = "auth:manage_roles"
     message = "You do not have permission to manage user roles."
+
+
+class CanReadUsers(HasPermissionCode):
+    required_permission = "users:read"
+    message = "You do not have permission to read users."
+
+
+class CanWriteUsers(HasPermissionCode):
+    required_permission = "users:write"
+    message = "You do not have permission to manage users."
