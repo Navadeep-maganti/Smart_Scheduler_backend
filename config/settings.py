@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+import dj_database_url
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -91,15 +92,17 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "smart_sched"),
-        "USER": os.getenv("POSTGRES_USER", "smart_sched_user"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "smart_sched_password"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
-    }
+DATABASES = {"default": dj_database_url.parse(
+        os.getenv("DATABASE_URL")
+    )
+    # "default": {
+    #     "ENGINE": "django.db.backends.postgresql",
+    #     "NAME": os.getenv("POSTGRES_DB", "smart_sched"),
+    #     "USER": os.getenv("POSTGRES_USER", "smart_sched_user"),
+    #     "PASSWORD": os.getenv("POSTGRES_PASSWORD", "smart_sched_password"),
+    #     "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+    #     "PORT": os.getenv("POSTGRES_PORT", "5432"),
+    # }
 }
 
 
