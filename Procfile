@@ -1,1 +1,1 @@
-web: gunicorn config.wsgi:application
+web: sh -c 'cd backend_django && gunicorn config.wsgi:application'
