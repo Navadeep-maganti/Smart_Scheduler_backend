@@ -4,7 +4,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import AppUser
+from .models import AppUser, Faculty
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -121,3 +121,23 @@ class UpdateUserRoleSerializer(serializers.ModelSerializer):
 class RoleSummarySerializer(serializers.Serializer):
     role = serializers.CharField()
     permissions = serializers.ListField(child=serializers.CharField())
+
+
+class FacultySerializer(serializers.ModelSerializer):
+    email = serializers.CharField(source="user.email", read_only=True)
+    role = serializers.CharField(source="user.role", read_only=True)
+    department_code = serializers.CharField(source="department.department_code", read_only=True)
+    department_name = serializers.CharField(source="department.department_name", read_only=True)
+
+    class Meta:
+        model = Faculty
+        fields = (
+            "faculty_id",
+            "faculty_name",
+            "email",
+            "role",
+            "department_id",
+            "department_code",
+            "department_name",
+        )
+    

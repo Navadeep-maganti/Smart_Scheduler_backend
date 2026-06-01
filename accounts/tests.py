@@ -1,7 +1,8 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import AppUser
+from .models import AppUser, Faculty
+from academics.models import Department
 
 
 class AuthenticationApiTests(APITestCase):
@@ -136,6 +137,31 @@ class AuthenticationApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["role"], self.user.role)
         self.assertIn("auth:manage_roles", response.data["permissions"])
+
+    def test_list_faculties_returns_faculty_details(self):
+        self.authenticate()
+        department = Department.objects.create(
+            department_code="CSE",
+            department_name="Computer Science",
+        )
+        faculty_user = AppUser.objects.create_user(
+            email="faculty1@example.com",
+            password="StrongPass123!",
+            role=AppUser.Role.FACULTY,
+        )
+        Faculty.objects.create(
+            user=faculty_user,
+            faculty_name="Prof. Jane Doe",
+            department=department,
+        )
+
+        response = self.client.get("/api/auth/faculties/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["faculty_name"], "Prof. Jane Doe")
+        self.assertEqual(response.data[0]["email"], "faculty1@example.com")
+        self.assertEqual(response.data[0]["department_code"], "CSE")
 
     def test_admin_can_update_user_role(self):
         self.authenticate()
