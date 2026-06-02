@@ -4,12 +4,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .models import AppUser, Faculty
+from .models import AppUser, Faculty, Student
 from .permissions import CanManageRoles, IsActiveAuthenticated
 from .serializers import (
     ChangePasswordSerializer,
     EmailTokenObtainPairSerializer,
     FacultySerializer,
+    StudentSerializer,
     LogoutSerializer,
     RegisterSerializer,
     RoleSummarySerializer,
@@ -69,6 +70,10 @@ class FacultyListView(generics.ListAPIView):
     permission_classes = [IsActiveAuthenticated]
     serializer_class = FacultySerializer
 
+class StudentListView(generics.ListAPIView):
+    queryset = Student.objects.select_related("user", "department").all()
+    permission_classes = [IsActiveAuthenticated]
+    serializer_class = StudentSerializer
 
 class ChangePasswordView(APIView):
     permission_classes = [IsActiveAuthenticated]
