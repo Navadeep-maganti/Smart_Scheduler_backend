@@ -38,6 +38,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = AppUser.USERNAME_FIELD
+    role = serializers.ChoiceField(choices=AppUser.Role.choices, required=True, write_only=True)
 
     @classmethod
     def get_token(cls, user):
@@ -49,6 +50,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         email = attrs.get("email")
         password = attrs.get("password")
+        role = attrs.get("role")
 
         user = authenticate(
             request=self.context.get("request"),
@@ -57,6 +59,9 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         )
         if user is None:
             raise AuthenticationFailed("Invalid email or password.")
+
+        if user.role != role:
+            raise AuthenticationFailed("Invalid role for this user.")
 
         data = super().validate(
             {

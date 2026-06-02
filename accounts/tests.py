@@ -17,7 +17,7 @@ class AuthenticationApiTests(APITestCase):
     def authenticate(self):
         response = self.client.post(
             "/api/auth/login/",
-            {"email": self.user.email, "password": self.password},
+            {"email": self.user.email, "password": self.password, "role": self.user.role},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -53,7 +53,7 @@ class AuthenticationApiTests(APITestCase):
     def test_login_returns_tokens_and_user(self):
         response = self.client.post(
             "/api/auth/login/",
-            {"email": self.user.email, "password": self.password},
+            {"email": self.user.email, "password": self.password, "role": self.user.role},
             format="json",
         )
 
@@ -68,11 +68,47 @@ class AuthenticationApiTests(APITestCase):
 
         response = self.client.post(
             "/api/auth/login/",
-            {"email": self.user.email, "password": self.password},
+            {"email": self.user.email, "password": self.password, "role": self.user.role},
             format="json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_accepts_matching_role(self):
+        response = self.client.post(
+            "/api/auth/login/",
+            {
+                "email": self.user.email,
+                "password": self.password,
+                "role": AppUser.Role.ADMIN,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["user"]["role"], AppUser.Role.ADMIN)
+
+    def test_login_rejects_role_mismatch(self):
+        response = self.client.post(
+            "/api/auth/login/",
+            {
+                "email": self.user.email,
+                "password": self.password,
+                "role": AppUser.Role.STUDENT,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_requires_role(self):
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": self.user.email, "password": self.password},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_me_returns_authenticated_user(self):
         self.authenticate()
