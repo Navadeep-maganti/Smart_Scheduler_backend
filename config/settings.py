@@ -38,7 +38,7 @@ ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv(
         "DJANGO_ALLOWED_HOSTS",
-        "localhost,127.0.0.1,smart-scheduler-backend-wvvw.onrender.com",
+        "localhost,127.0.0.1,smart-scheduler-backend-wvvw.onrender.com,https://smart-sched-admin-panel.vercel.app",
     ).split(",")
     if host.strip()
 ]
@@ -63,8 +63,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-'django.middleware.security.SecurityMiddleware',
-'whitenoise.middleware.WhiteNoiseMiddleware',    "django.contrib.sessions.middleware.SessionMiddleware",
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',   
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
