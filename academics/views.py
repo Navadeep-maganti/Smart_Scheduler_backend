@@ -61,7 +61,22 @@ class SafeDestroyMixin:
         return Response({"message": self.success_delete_message}, status=status.HTTP_200_OK)
 
 
-class DepartmentViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
+class PublicListMixin:
+    def is_list_action(self):
+        return getattr(self, "action", None) == "list" or "list" in self.action_map.values()
+
+    def get_permissions(self):
+        if self.is_list_action():
+            return [permissions.AllowAny()]
+        return super().get_permissions()
+
+    def get_authenticators(self):
+        if "list" in self.action_map.values():
+            return []
+        return super().get_authenticators()
+
+
+class DepartmentViewSet(PublicListMixin, SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
     queryset = Department.objects.select_related("hod__user", "hod__department").all()
     serializer_class = DepartmentSerializer
     permission_classes = [AcademicsPermission]
@@ -71,16 +86,6 @@ class DepartmentViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSe
         "hod_id": "hod_id",
     }
     search_fields = ("department_code", "department_name")
-
-    def get_permissions(self):
-        if self.action == "list":
-            return [permissions.AllowAny()]
-        return super().get_permissions()
-
-    def get_authenticators(self):
-        if self.action == "list":
-            return []
-        return super().get_authenticators()
 
 
 class AcademicTermViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
@@ -96,7 +101,7 @@ class AcademicTermViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelView
     search_fields = ("academic_year",)
 
 
-class SectionViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
+class SectionViewSet(PublicListMixin, SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
     queryset = Section.objects.select_related("department", "academic_term").all()
     serializer_class = SectionSerializer
     permission_classes = [AcademicsPermission]
@@ -108,16 +113,6 @@ class SectionViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
         "section_name": "section_name__iexact",
     }
     search_fields = ("section_name", "department__department_code", "department__department_name")
-
-    def get_permissions(self):
-        if self.action == "list":
-            return [permissions.AllowAny()]
-        return super().get_permissions()
-
-    def get_authenticators(self):
-        if self.action == "list":
-            return []
-        return super().get_authenticators()
 
 
 class SubjectViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
