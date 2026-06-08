@@ -1,9 +1,11 @@
 from django.contrib.auth import authenticate, password_validation
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from academics.models import Department, Section
 from .models import AppUser, Faculty , Student
 
 
@@ -18,10 +20,35 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
+    student_name = serializers.CharField(write_only=True, required=False)
+    roll_no = serializers.CharField(write_only=True, required=False)
+    faculty_name = serializers.CharField(write_only=True, required=False)
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source="department",
+        write_only=True,
+        required=False,
+    )
+    section_id = serializers.PrimaryKeyRelatedField(
+        queryset=Section.objects.select_related("department").all(),
+        source="section",
+        write_only=True,
+        required=False,
+    )
 
     class Meta:
         model = AppUser
-        fields = ("user_id", "email", "password", "role")
+        fields = (
+            "user_id",
+            "email",
+            "password",
+            "role",
+            "student_name",
+            "roll_no",
+            "faculty_name",
+            "department_id",
+            "section_id",
+        )
         read_only_fields = ("user_id",)
 
     def validate_email(self, value):
@@ -31,9 +58,71 @@ class RegisterSerializer(serializers.ModelSerializer):
         password_validation.validate_password(value)
         return value
 
+    def validate(self, attrs):
+        role = attrs.get("role")
+        department = attrs.get("department")
+        section = attrs.get("section")
+
+        if role == AppUser.Role.STUDENT:
+            required_fields = {
+                "student_name": "student_name",
+                "roll_no": "roll_no",
+                "department": "department_id",
+                "section": "section_id",
+            }
+            missing_fields = [
+                output_field for internal_field, output_field in required_fields.items() if not attrs.get(internal_field)
+            ]
+            if missing_fields:
+                raise serializers.ValidationError(
+                    {field: "This field is required for student registration." for field in missing_fields}
+                )
+            if section.department_id != department.department_id:
+                raise serializers.ValidationError(
+                    {"section_id": "Selected section must belong to the selected department."}
+                )
+        elif role in {AppUser.Role.FACULTY, AppUser.Role.HOD}:
+            required_fields = {
+                "faculty_name": "faculty_name",
+                "department": "department_id",
+            }
+            missing_fields = [
+                output_field for internal_field, output_field in required_fields.items() if not attrs.get(internal_field)
+            ]
+            if missing_fields:
+                raise serializers.ValidationError(
+                    {field: "This field is required for faculty registration." for field in missing_fields}
+                )
+
+        return attrs
+
+    @transaction.atomic
     def create(self, validated_data):
         password = validated_data.pop("password")
-        return AppUser.objects.create_user(password=password, **validated_data)
+        student_name = validated_data.pop("student_name", None)
+        roll_no = validated_data.pop("roll_no", None)
+        faculty_name = validated_data.pop("faculty_name", None)
+        department = validated_data.pop("department", None)
+        section = validated_data.pop("section", None)
+
+        user = AppUser.objects.create_user(password=password, **validated_data)
+
+        if user.role == AppUser.Role.STUDENT:
+            Student.objects.create(
+                user=user,
+                student_name=student_name,
+                roll_no=roll_no,
+                department=department,
+                section=section,
+            )
+        elif user.role in {AppUser.Role.FACULTY, AppUser.Role.HOD}:
+            Faculty.objects.create(
+                user=user,
+                faculty_name=faculty_name,
+                department=department,
+            )
+
+        return user
 
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):

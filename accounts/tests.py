@@ -1,7 +1,11 @@
+from datetime import date
+
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import AppUser
+from academics.models import AcademicTerm, Department, Section
+
+from .models import AppUser, Faculty, Student
 
 
 class AuthenticationApiTests(APITestCase):
@@ -12,6 +16,24 @@ class AuthenticationApiTests(APITestCase):
             email="user@example.com",
             password=self.password,
             role=AppUser.Role.ADMIN,
+        )
+        self.department = Department.objects.create(
+            department_code="ECE",
+            department_name="Electronics and Communication Engineering",
+        )
+        self.term = AcademicTerm.objects.create(
+            academic_year="2026-2027",
+            term_type=AcademicTerm.TermType.ODD,
+            start_date=date(2026, 6, 1),
+            end_date=date(2026, 11, 1),
+            is_active=True,
+        )
+        self.section = Section.objects.create(
+            department=self.department,
+            academic_term=self.term,
+            year_number=2,
+            section_name="A",
+            student_strength=60,
         )
 
     def authenticate(self):
@@ -30,7 +52,7 @@ class AuthenticationApiTests(APITestCase):
             {
                 "email": "newuser@example.com",
                 "password": "AnotherPass123!",
-                "role": AppUser.Role.FACULTY,
+                "role": AppUser.Role.ADMIN,
             },
             format="json",
         )
@@ -39,6 +61,80 @@ class AuthenticationApiTests(APITestCase):
         self.assertEqual(response.data["message"], "User registered successfully.")
         self.assertEqual(response.data["user"]["email"], "newuser@example.com")
         self.assertTrue(AppUser.objects.filter(email="newuser@example.com").exists())
+
+    def test_register_creates_student_profile(self):
+        response = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "student@example.com",
+                "password": "AnotherPass123!",
+                "role": AppUser.Role.STUDENT,
+                "student_name": "Student One",
+                "roll_no": "ECE001",
+                "department_id": self.department.department_id,
+                "section_id": self.section.section_id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = AppUser.objects.get(email="student@example.com")
+        student = Student.objects.get(user=user)
+        self.assertEqual(student.student_name, "Student One")
+        self.assertEqual(student.roll_no, "ECE001")
+        self.assertEqual(student.department_id, self.department.department_id)
+        self.assertEqual(student.section_id, self.section.section_id)
+
+    def test_register_creates_faculty_profile(self):
+        response = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "faculty@example.com",
+                "password": "AnotherPass123!",
+                "role": AppUser.Role.FACULTY,
+                "faculty_name": "Faculty One",
+                "department_id": self.department.department_id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = AppUser.objects.get(email="faculty@example.com")
+        faculty = Faculty.objects.get(user=user)
+        self.assertEqual(faculty.faculty_name, "Faculty One")
+        self.assertEqual(faculty.department_id, self.department.department_id)
+
+    def test_register_rejects_student_without_profile_details(self):
+        response = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "incomplete-student@example.com",
+                "password": "AnotherPass123!",
+                "role": AppUser.Role.STUDENT,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("student_name", response.data)
+        self.assertIn("roll_no", response.data)
+        self.assertIn("department_id", response.data)
+        self.assertIn("section_id", response.data)
+
+    def test_register_rejects_faculty_without_profile_details(self):
+        response = self.client.post(
+            "/api/auth/register/",
+            {
+                "email": "incomplete-faculty@example.com",
+                "password": "AnotherPass123!",
+                "role": AppUser.Role.FACULTY,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("faculty_name", response.data)
+        self.assertIn("department_id", response.data)
 
     def test_register_rejects_weak_password(self):
         response = self.client.post(
