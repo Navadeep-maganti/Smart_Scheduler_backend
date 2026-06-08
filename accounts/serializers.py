@@ -151,6 +151,8 @@ class StudentSerializer(serializers.ModelSerializer):
     role = serializers.CharField(source="user.role", read_only=True)
     department_code = serializers.CharField(source="department.department_code", read_only=True)
     department_name = serializers.CharField(source="department.department_name", read_only=True)
+    section_name = serializers.CharField(source="section.section_name", read_only=True)
+    section_year = serializers.IntegerField(source="section.year_number", read_only=True)
     
     class Meta:
         model = Student
@@ -163,4 +165,7 @@ class StudentSerializer(serializers.ModelSerializer):
             "department_id",
             "department_code",
             "department_name",
+            "section_id",
+            "section_name",
+            "section_year",
         )

@@ -131,6 +131,13 @@ class Student(models.Model):
         on_delete=models.PROTECT,
         related_name="students",
     )
+    section = models.ForeignKey(
+        "academics.Section",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="students",
+    )
 
     class Meta:
         db_table = "student"
@@ -138,6 +145,8 @@ class Student(models.Model):
     def clean(self):
         if self.user_id and self.user.role != AppUser.Role.STUDENT:
             raise ValidationError({"user": "Selected user must have the STUDENT role."})
+        if self.section_id and self.department_id and self.section.department_id != self.department_id:
+            raise ValidationError({"section": "Selected section must belong to the student's department."})
 
     def __str__(self):
         return f"{self.roll_no} - {self.student_name}"

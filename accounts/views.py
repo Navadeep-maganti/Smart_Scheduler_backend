@@ -71,7 +71,7 @@ class FacultyListView(generics.ListAPIView):
     serializer_class = FacultySerializer
 
 class StudentListView(generics.ListAPIView):
-    queryset = Student.objects.select_related("user", "department").all()
+    queryset = Student.objects.select_related("user", "department", "section").all()
     permission_classes = [IsActiveAuthenticated]
     serializer_class = StudentSerializer
 
