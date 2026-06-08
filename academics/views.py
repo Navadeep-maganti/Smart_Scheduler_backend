@@ -77,6 +77,11 @@ class DepartmentViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSe
             return [permissions.AllowAny()]
         return super().get_permissions()
 
+    def get_authenticators(self):
+        if self.action == "list":
+            return []
+        return super().get_authenticators()
+
 
 class AcademicTermViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
     queryset = AcademicTerm.objects.all()
@@ -108,6 +113,11 @@ class SectionViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
         if self.action == "list":
             return [permissions.AllowAny()]
         return super().get_permissions()
+
+    def get_authenticators(self):
+        if self.action == "list":
+            return []
+        return super().get_authenticators()
 
 
 class SubjectViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
