@@ -1,6 +1,6 @@
 from django.db.models.deletion import ProtectedError
 from django.db.models import Q
-from rest_framework import serializers, status, viewsets
+from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.response import Response
 
 from .models import AcademicTerm, Department, Section, Subject
@@ -72,6 +72,11 @@ class DepartmentViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSe
     }
     search_fields = ("department_code", "department_name")
 
+    def get_permissions(self):
+        if self.action == "list":
+            return [permissions.AllowAny()]
+        return super().get_permissions()
+
 
 class AcademicTermViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
     queryset = AcademicTerm.objects.all()
@@ -98,6 +103,11 @@ class SectionViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):
         "section_name": "section_name__iexact",
     }
     search_fields = ("section_name", "department__department_code", "department__department_name")
+
+    def get_permissions(self):
+        if self.action == "list":
+            return [permissions.AllowAny()]
+        return super().get_permissions()
 
 
 class SubjectViewSet(SafeDestroyMixin, QueryFilterMixin, viewsets.ModelViewSet):

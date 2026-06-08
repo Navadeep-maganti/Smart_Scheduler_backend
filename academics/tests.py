@@ -67,6 +67,12 @@ class AcademicsApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data[0]["department_code"], "ECE")
 
+    def test_unauthenticated_user_can_list_departments(self):
+        response = self.client.get("/api/academics/departments/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]["department_code"], "ECE")
+
     def test_admin_can_create_department(self):
         self.authenticate(self.admin_user)
 
@@ -93,6 +99,13 @@ class AcademicsApiTests(APITestCase):
     def test_can_filter_sections(self):
         self.authenticate(self.student_user)
 
+        response = self.client.get(f"/api/academics/sections/?department_id={self.department.department_id}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["section_id"], self.section.section_id)
+
+    def test_unauthenticated_user_can_list_sections(self):
         response = self.client.get(f"/api/academics/sections/?department_id={self.department.department_id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
